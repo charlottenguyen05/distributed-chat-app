@@ -1,0 +1,57 @@
+Task 1b) 
+Server:10000    10001   10002   10003
+    0 :0.0      0.0     0.0     0.0
+    1 :0.1      0.1     0.1     0.1
+    2 :0.2      0.2     0.2     0.2
+    3 :1.0      1.0     1.0     1.0
+    4 :2.0      2.0     2.0     2.0
+    5 :0.3      0.3     0.3     0.3
+    6 :1.1      1.1     1.1     1.1
+    7 :2.1      2.1     2.1     2.1
+    8 :1.2      1.2     1.2     1.2
+    9 :3.0      3.0     3.0     3.0
+   10 :2.2      2.2     2.2     2.2
+   11 :1.3      1.3     1.3     1.3
+   12 :3.1      3.1     3.1     3.1
+   13 :2.3      2.3     2.3     2.3
+   14 :3.2      3.2     3.2     3.2
+   15 :3.3      3.3     3.3     3.3
+Time for uploading: 22.521018981933594 ms
+
+* Server 3 not start from the beginning
+Connection Refused: [WinError 1225] The remote computer refused the network connection
+The FaultTolerantProxy on server 0 to server 3 still have the queue of all update operations
+So when Server 3 start, all of operations is loaded into checkpoint of 3
+
+* No coordinator: 
+[FaultTolerantProxy] Operation failed: PUT failed: Connection Refused: [WinError 1225] The remote computer refused the network connection, retrying in 1 second...
+
+* Server 3 down during the sending of 1000 msg to 10001 and 10002:
+Yes, still get that
+The FaultTolerantProxy on server 0 to server 3 still have the queue of all update operations
+So when Server 3 restart, all of operations is loaded into checkpoint of 3
+
+* Coordinator stop during sending 1000msg:
+[FaultTolerantProxy] Operation failed: PUT failed: Connection Refused: [WinError 1225] The remote computer refused the network connection, retrying in 1 second...
+It depends:
+- If all the messages in the phase of forwarding from server 1/2 to coordinator:
+Yes, still get that because the queue on the FaultTolerantProxy of server 1 and 2 to server 0
+contains the update operations it forward to server 0. 
+So when the server 0 restarts, these messages will continue to sent to server 0.
+- If some messages has been received by coordinator but not yet forward to other's proxies (store in its queue):
+NO, when coordinator stops, the queue (FaultTolerantProxy) gone forever. 
+So we will miss all the messages in that queue.
+
+2) How many messages do you observe on each server? Do all servers contain the same messages? Are these in the correct order? Can you explain why, if this is not the case? 
+
+Each server has different number of messages (sometime <16, sometime >16 messages). 
+
+No, the server doesn't contains the same message
+because some message got lost on their way of forwarding 
+in the proxy or from client -> server so it needs to be resend at most 5 times, some success some don't (also messages duplicates) 
+so the message is not the same
+
+Order is correct: 
+But we have the Vector Clock to sort the messages so the order is always correct
+The InformAllOthersServerWithClock approach: if an update request send to a server,
+then update directly its local storage and then forward that updates to other servers through proxies.

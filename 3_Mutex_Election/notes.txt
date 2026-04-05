@@ -1,0 +1,11 @@
+Task 2:
+The order of messages in all servers is the same
+Time for uploading 4 messages: ~16ms (4ms/message)
+Time for uploading 1000 messages: 1m28s (88ms/message)
+Caused by Queuing delay
+
+Task 3: 
+Time for uploading 4 messages: 8142ms after terminating server 3
+Time for election is pretty long, no immediate update in board 
+like previous. It needs to wait a few seconds for the election and
+update operations to finished.
